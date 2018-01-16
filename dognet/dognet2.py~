@@ -1,0 +1,256 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from torch.autograd import Variable
+from torch.nn.parameter import Parameter
+    
+class G2Di(nn.Module):
+    def __init__(self,w,n_gaussian,padding=None):
+        super(G2Di, self).__init__()
+        self.s = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)
+        self.A = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)
+          
+        self.xes = torch.FloatTensor(range(-w/2+1,w/2+1))            
+        self.xes = Variable(self.xes.repeat(self.xes.size(0),1),requires_grad=False).unsqueeze(-1).cuda()
+        self.xes = self.xes.repeat(1,1,n_gaussian)
+        self.yes = self.xes.transpose(1,0)
+              
+        self.padding = w/2
+        
+    def _get_filter(self,s,A=None):
+        s = s.abs()
+        s = s.expand(self.xes.size(0),self.xes.size(1),s.size(0))
+        A = self.A.expand(self.xes.size(0),self.xes.size(1),self.A.size(0))
+        fiters = A*( - (self.xes**2 + self.yes**2)/(2*s**2)).exp()
+        return fiters.transpose(0,2).unsqueeze(1).contiguous()
+    
+    def forward(self,x):        
+        fiters = self._get_filter(self.s,self.A)
+        return F.conv2d(x,fiters, padding=self.padding,groups=x.size(1))
+  
+    
+class G2Dif(nn.Module):
+    def __init__(self,w,n_gaussian,padding=None):
+        super(G2Dif, self).__init__()
+        self.s = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)
+          
+        self.xes = torch.FloatTensor(range(-w/2+1,w/2+1))            
+        self.xes = Variable(self.xes.repeat(self.xes.size(0),1),requires_grad=False).unsqueeze(-1).cuda()
+        self.xes = self.xes.repeat(1,1,n_gaussian)
+        self.yes = self.xes.transpose(1,0)
+              
+        self.padding = w/2
+        
+    def _get_filter(self,s):
+        s = s.abs()
+        s = s.expand(self.xes.size(0),self.xes.size(1),s.size(0))
+    
+        fiters = ( - (self.xes**2 + self.yes**2)/(2*s**2)).exp()/(s+1e-8)
+        return fiters.transpose(0,2).unsqueeze(1).contiguous()
+    
+    def forward(self,x):        
+        fiters = self._get_filter(self.s,self.A)
+        return F.conv2d(x,fiters, padding=self.padding,groups=x.size(1))
+    
+        
+class DG2Dif(G2Dif):
+    def __init__(self,w,n_gaussian,padding=None):
+        super(DG2Dif, self).__init__(w,n_gaussian,padding)
+        self.s2 = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)                    
+    def forward(self,x):  
+        fiters = self._get_filter(self.s)-self._get_filter(self.s2)
+        return F.conv2d(x,fiters, padding=self.padding,groups=x.size(1))  
+    
+class DG2Di(G2Di):
+    def __init__(self,w,n_gaussian,padding=None):
+        super(DG2Di, self).__init__(w,n_gaussian,padding)
+        self.s2 = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)    
+        self.B = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)
+                   
+    def forward(self,x):  
+        fiters = self._get_filter(self.s,self.A)-self._get_filter(self.s2,self.B)
+        return F.conv2d(x,fiters, padding=self.padding,groups=x.size(1))    
+    
+class Laplasian(nn.Module):
+    def __init__(self,w,n_gaussian,padding=None,delta=0.1):
+        super(Laplasian, self).__init__()
+        self.s = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)
+        self.xes = torch.FloatTensor(range(-w/2+1,w/2+1))            
+        self.xes = Variable(self.xes.repeat(self.xes.size(0),1),requires_grad=False).unsqueeze(-1).cuda()
+        self.xes = self.xes.repeat(1,1,n_gaussian)
+        self.yes = self.xes.transpose(1,0)
+        self.sqr = -(self.xes**2 + self.yes**2)
+        self.delta = delta      
+        self.padding = w/2
+        
+    def forward(self,x):  
+        s = 2*self.s.abs()**2
+        s = s.expand(self.xes.size(0),self.xes.size(1),s.size(0))   
+
+        fiters = ((self.sqr/s).exp() - (self.sqr/(s+self.delta)).exp()).transpose(0,2).unsqueeze(1).contiguous()
+        #print(x.size(),fiters.size(),s.size())
+        return F.conv2d(x,fiters, padding=self.padding,groups=x.size(1))       
+        
+class G2D(nn.Module):
+    def __init__(self,w,n_gaussian,padding=None):
+        super(G2D, self).__init__()
+        self.sx = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)
+        self.sy = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)
+        self.th = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)
+        self.A = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)
+        
+        
+        self.xes = torch.FloatTensor(range(-w/2+1,w/2+1))            
+        self.xes = Variable(self.xes.repeat(self.xes.size(0),1),requires_grad=False).unsqueeze(-1).cuda()
+        self.xes = self.xes.repeat(1,1,n_gaussian)
+        self.yes = self.xes.transpose(1,0)
+            
+        self.padding = w/2
+    
+    def _get_filter(self,sx,sy,theta,A):
+        sx = sx.abs()
+        sy = sy.abs()
+        
+        a = theta.cos()**2/(2*sx**2) + theta.sin()**2/(2*sy**2)
+        b = -(2*theta).sin()/(4*sx**2) + (2*theta).sin()/(4*sy**2)
+        c = theta.sin()**2/(2*sx**2) + theta.cos()**2/(2*sy**2)
+
+        a = a.expand(self.xes.size(0),self.xes.size(1),a.size(0))
+        b = b.expand(self.xes.size(0),self.xes.size(1),b.size(0))
+        c = c.expand(self.xes.size(0),self.xes.size(1),c.size(0))
+        
+        A = A.expand(self.xes.size(0),self.xes.size(1),A.size(0))
+        fiters = A*( - (a*self.xes**2 + 2*b*self.xes*self.yes + c*self.yes**2)).exp()
+            
+        
+        return fiters.transpose(0,2).unsqueeze(1).contiguous()
+           
+    def forward(self,x):        
+        fiters = self._get_filter(self.sx,self.sy,self.th,self.A)
+        return F.conv2d(x,fiters, padding=self.padding,groups=x.size(1))
+
+
+        
+        
+class DG2D(G2D):
+    def __init__(self,w,n_gaussian,padding=None):
+        super(DG2D, self).__init__(w,n_gaussian,padding)
+        self.sx2 = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)
+        self.sy2 = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)        
+        self.B = Parameter(torch.randn(n_gaussian).float().cuda(),requires_grad=True)
+
+    def forward(self,x):  
+        fiters = self._get_filter(self.sx,self.sy,self.th,self.A)-self._get_filter(self.sx2,self.sy2,self.th,self.B)
+        return F.conv2d(x,fiters, padding=self.padding,groups=x.size(1))
+
+
+
+class BlobDetector5(nn.Module):
+    def __init__(self, in_channels,filter_size=9):
+        super(BlobDetector5,self).__init__()
+        self.conv1 = Laplasian(filter_size,in_channels)
+        self.conv2 = nn.Conv2d(in_channels, 1, 1)
+        
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        return F.sigmoid(x)
+    
+    
+class BlobDetector6(nn.Module):
+    def __init__(self, in_channels,filter_size=9):
+        super(BlobDetector6,self).__init__()
+        self.conv0 = nn.Conv2d(in_channels, in_channels*4, 1)
+        self.conv1 = DG2Dif(filter_size,in_channels*4)
+        self.conv2 = nn.Conv2d(in_channels*4, 1, 1)
+        
+    def forward(self, x):
+        x = self.conv0(x)
+        x = F.relu(x)
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        return F.sigmoid(x)
+    
+class BlobDetector7(nn.Module):
+    def __init__(self, in_channels,filter_size=9,k=4):
+        super(BlobDetector7,self).__init__()
+        self.conv1 = DG2Dif(filter_size,in_channels*k)
+        self.conv2 = nn.Conv2d(in_channels*k, 1,1)
+        
+    def forward(self, x):
+       
+        x = self.conv1(x)
+        y = F.sigmoid(x)
+        x = self.conv2(y)
+        return F.sigmoid(x),y
+    
+    
+class BlobDetector1(nn.Module):
+    def __init__(self, in_channels,filter_size=9,k=5):
+        super(BlobDetector1,self).__init__()
+        self.conv1 = DG2Di(filter_size,in_channels*k)
+        self.conv2 = nn.Conv2d(in_channels*k, 1, 1)
+        
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        return F.sigmoid(x)
+    
+class BlobDetector2(nn.Module):
+    def __init__(self, in_channels,filter_size=21,k=5):
+        super(BlobDetector2,self).__init__()
+
+        self.conv1 = DG2Di(filter_size,in_channels*k)
+        self.conv2 = nn.Conv2d(in_channels*k, in_channels*k, 1)
+        self.conv3 = DG2Di(filter_size,in_channels*k)
+        self.conv4 = nn.Conv2d(in_channels*k, in_channels*k, 1)
+        self.conv5 = DG2Di(filter_size, in_channels*k)
+        self.conv6 = nn.Conv2d( in_channels*k, 1, 1)
+     
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = self.conv3(x)
+        x = self.conv4(x)
+        x = F.relu(x)
+        x = self.conv5(x)
+        x = self.conv6(x)
+        return F.sigmoid(x)
+    
+class BlobDetector4(nn.Module):
+    def __init__(self, in_channels,filter_size=21):
+        super(BlobDetector4,self).__init__()
+
+        self.conv1 = DG2Di(filter_size,in_channels)
+        self.conv2 = nn.Conv2d(in_channels, in_channels/2, 1)
+        self.conv5 = DG2Di(filter_size, in_channels)
+        self.conv6 = nn.Conv2d( in_channels, 1, 1)
+     
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = self.conv5(x)
+        x = self.conv6(x)
+        return F.sigmoid(x)
+    
+class BlobDetector3(nn.Module):
+    def __init__(self, in_channels,filter_size=9):
+        super(BlobDetector3,self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, in_channels, 1)
+        self.conv2 = nn.Conv2d(in_channels, in_channels, 1)
+        self.conv3 = nn.Conv2d(in_channels, 1, 1)
+        
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = self.conv3(x)
+        return F.sigmoid(x)
+    
