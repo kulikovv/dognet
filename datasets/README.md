@@ -2,9 +2,9 @@
 Small parts of datasets to demonstate the work of DoGNet. 
 
 Full datasets could be found by follow links:
-* Collman15v1
+* [Collman15v1][https://neurodata.io/data/collman15]
 * Prims17
-* Weiler14
+* [Weiler14][https://neurodata.io/data/weiler14]
 
 Please refer the orignal works of those datasets:
 
