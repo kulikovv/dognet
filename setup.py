@@ -12,6 +12,9 @@ setuptools.setup(
         "matplotlib_scalebar",
         "torch"
     ],
+    package_data={
+        "dognet"
+    }
     license="GNU v3",
     name="dognet",
     url="https://github.com/kulikovv/dognet",
