@@ -5,16 +5,20 @@ setuptools.setup(
     author_email="kulikov.victor@gmail.com",
     install_requires=[
         "numpy",
-        "skimage",
+        "scikit-image",
         "sklearn",
         "matplotlib",
-        "scikit",
+        "scipy",
         "matplotlib_scalebar",
         "torch"
     ],
-    package_data={
-        "dognet"
-    }
+    packages=setuptools.find_packages(
+        exclude=[
+            "notebooks",
+	    "images",
+	    "datasets"
+        ]
+    ),
     license="GNU v3",
     name="dognet",
     url="https://github.com/kulikovv/dognet",
