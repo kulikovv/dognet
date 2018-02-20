@@ -23,7 +23,7 @@ We propose DoGNet, a neural architecture, that closes the gap between classical 
 ## Installation/Uninstall/Run
 * python setup.py install --user
 * pip uninstall dognet
-* python run_prism_cpu.py
+* using jupyter run and of notebooks
 
 ## Acknowledgements
 This work is supported by Skoltech NGP Program (Skoltech-MIT joint project)
