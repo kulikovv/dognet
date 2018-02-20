@@ -154,6 +154,8 @@ def get_metric(pts1, pts2, s=5.):
     gt_res = calc_fitting(pts1, pts2, s)
     precision = float(len(gt_res)) / float(pts1.shape[0])
     recall = float(len(gt_res)) / float(pts2.shape[0])
+    if  0==(precision + recall):
+        return 0,0,0,[]
     f1 = 2 * (precision * recall) / (precision + recall)
     return precision, recall, f1, gt_res
 

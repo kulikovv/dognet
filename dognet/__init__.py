@@ -24,13 +24,15 @@ from networks import (
     SimpleIsotropic,
     SimpleAnisotropic,
     SimpleNetwork,
+    Simple3DNetwork,
     DeepIsotropic,
     DeepAnisotropic
 )
 
 from training import (
     train_routine,
-    create_generator
+    create_generator,
+    create_generator_3d
 )
 
 import baselines

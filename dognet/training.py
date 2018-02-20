@@ -6,7 +6,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 
-def create_generator(data, labels, s=0):
+def create_generator(data, labels, s=0 , size=(64, 64), n=10):
     """
     Generates training patches
     :param data: list of images
@@ -14,7 +14,7 @@ def create_generator(data, labels, s=0):
     :return: function generator
     """
 
-    def f(n=10, size=(64, 64), s=s):
+    def f(n=n, size=size, s=s):
 
         d = np.zeros((n, data[0].shape[0], size[0], size[1]))
         l = np.zeros((n, 1, size[0] - 2 * s, size[1] - 2 * s))
@@ -39,6 +39,38 @@ def create_generator(data, labels, s=0):
 
     return f
 
+def create_generator_3d(data, labels, s=0 , size=(64, 64), n=10, depth=1):
+    """
+    Generates training patches
+    :param data: list of images
+    :param labels: list of labels
+    :return: function generator
+    """
+
+    def f(n=n, size=size, s=s):
+
+        d = np.zeros((n, data[0].shape[0],1+2*depth, size[0], size[1]))
+        l = np.zeros((n, 1, size[0] - 2 * s, size[1] - 2 * s))
+        rot = np.random.randint(0, 1, n)
+        flip = np.random.randint(0, 1, n)
+        for i in range(n):
+            index = np.random.randint(depth, len(data)-depth)
+            x = np.random.randint(0, data[index].shape[1] - size[0])
+            y = np.random.randint(0, data[index].shape[2] - size[1])
+            dd = np.stack([data[a][:, x:x + size[0], y:y + size[1]].copy() for a in range(index-depth,index+depth+1) ],1) 
+            ll = labels[index][x + s:x + size[0] - s, y + s:y + size[1] - s].copy()
+
+            if rot[i] > 0:
+                dd = np.rot90(dd)
+                ll = np.rot90(ll)
+            if flip[i] > 0:
+                dd = np.flipud(dd)
+                ll = np.flipud(ll)
+            d[i] = dd
+            l[i, 0] = ll
+        return d, l
+
+    return f
 
 def update_rate(optimizer, lr):
     for param_group in optimizer.param_groups:
@@ -59,7 +91,7 @@ def train_routine(detector,
                   lr=0.01,
                   margin=10,
                   decay_schedule=(3000, 0.1),
-                  use_gpu=True):
+                  use_gpu=True,verbose=True):
     """
     Train a detector with respect to the data from generator
     :param detector: A detector network
@@ -72,10 +104,12 @@ def train_routine(detector,
     :param use_gpu: if system has cuda support, the training can be run on GPU
     :return: trained network, errors
     """
-    optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, detector.parameters()), lr=lr)
+    
     detector.train()
+    optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, detector.parameters()), lr=lr)
     errors = []
-    print("Training started!")
+    if verbose:
+        print("Training started!")
     percent_old = 0
     for i in range(n_iter):
         x, y = generator()
@@ -101,9 +135,12 @@ def train_routine(detector,
         percent = int(float(i) / float(n_iter) * 20.)
         if percent_old != percent:
             percent_old = percent
-            print_percent(percent)
+            if verbose:
+                print_percent(percent)
 
-    print_percent(20)
+    
     detector.eval()
-    print("\nTraining finished!")
+    if verbose:
+        print_percent(20)
+        print("\nTraining finished!")
     return detector, errors

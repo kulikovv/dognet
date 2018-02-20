@@ -12,7 +12,10 @@ class DoG2DIsotropic(nn.Module):
         super(DoG2DIsotropic, self).__init__()
         self.A = Gaussian2DIsotropic(w, n_gaussian, learn_amplitude)
         self.B = Gaussian2DIsotropic(w, n_gaussian, learn_amplitude)
-
+        
+    def weights_init(self):
+        self.A.weights_init(2.)
+        self.B.weights_init(1.)
 
     def forward(self, x):
         filters = self.A.get_filter() - self.B.get_filter()
@@ -26,6 +29,10 @@ class DoG2DAnisotropic(nn.Module):
         self.A = Gaussian2DAnisotropic(w, n_gaussian, th=self.theta,learn_amplitude=learn_amplitude)
         self.B = Gaussian2DAnisotropic(w, n_gaussian, th=self.theta,learn_amplitude=learn_amplitude)
 
+    def weights_init(self):
+        self.A.weights_init(2.,2.)
+        self.B.weights_init(1.,1.)
+        
     def forward(self, x):
         filters = self.A.get_filter() - self.B.get_filter()
         return F.conv2d(x, filters, padding=self.A.padding, groups=x.size(1))
@@ -34,12 +41,18 @@ class DoG2DAnisotropic(nn.Module):
 class DoG3DIsotropic(nn.Module):
     def __init__(self, w, n_gaussian, depth, learn_amplitude=False):
         super(DoG3DIsotropic, self).__init__()
+        self.w = w
         self.A = Gaussian3DIsotropic(w, n_gaussian,depth, learn_amplitude)
         self.B = Gaussian3DIsotropic(w, n_gaussian,depth, learn_amplitude)
 
+    def weights_init(self):
+        self.A.weights_init(2.,1.)
+        self.B.weights_init(1.,1.)
+        
     def forward(self, x):
         filters = self.A.get_filter() - self.B.get_filter()
-        return F.conv3d(x, filters, padding=self.A.padding, groups=x.size(1))
+        filters = filters.transpose(2,4).transpose(3,4).contiguous()
+        return F.conv3d(x, filters, padding=(0,self.w/2,self.w/2), groups=x.size(1))
 
 """
 class Laplasian(nn.Module):

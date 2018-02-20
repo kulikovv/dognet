@@ -73,6 +73,11 @@ class Unet(nn.Module):
         dd = self.u0(b, b)
         d = self.u1(dd, a)
         return F.sigmoid(self.conv1x1(d)), None
+    
+    def weights_init(self):
+        for m in self.modules():
+            if isinstance(m, torch.nn.Conv2d):
+                m.weight.data.normal_(0., 2.)
 
 
 class FCN(nn.Module):
@@ -92,7 +97,12 @@ class FCN(nn.Module):
         self.net = nn.Sequential(*layer[:-1])
 
         self.final = nn.Conv2d(in_dims * k, 1, 1, padding=0)
-
+        
+    def weights_init(self):
+        for m in self.modules():
+            if isinstance(m, torch.nn.Conv2d):
+                m.weight.data.normal_(0., 2.)
+                
     def forward(self, x):
         x = self.begin(x)
         x = self.net(x)

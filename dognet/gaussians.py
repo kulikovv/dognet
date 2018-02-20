@@ -50,10 +50,15 @@ class Gaussian2DIsotropic(Gaussian2DBase):
         """
         super(Gaussian2DIsotropic, self).__init__(w, n_gaussian)
         self.s = Parameter(torch.randn(n_gaussian).float(), requires_grad=True)
-
+        
         self.amplitude = None
         if learn_amplitude:
             self.amplitude = Parameter(torch.randn(n_gaussian).float(), requires_grad=True)
+    
+    def weights_init(self,s):
+        self.s.data.normal_(s,0.3)
+        if self.amplitude is not None:
+            self.amplitude.data.fill_(1.)
 
     def get_filter(self, s=None, amplitude=None):
         """
@@ -112,6 +117,12 @@ class Gaussian2DAnisotropic(Gaussian2DBase):
             self.amplitude = Parameter(torch.randn(n_gaussian).float(), requires_grad=True)
         else:
             self.amplitude = None
+            
+    def weights_init(self,x,y):
+        self.sx.data.normal_(x,0.3)
+        self.sy.data.normal_(y,0.3)
+        if self.amplitude is not None:
+            self.amplitude.data.fill_(1.)
 
     def get_filter(self, sx=None, sy=None, theta=None, amplitude=None):
 
@@ -178,6 +189,12 @@ class Gaussian3DIsotropic(Gaussian3DBase):
         self.amplitude = None
         if learn_amplitude:
             self.amplitude = Parameter(torch.randn(n_gaussian).float(), requires_grad=True)
+            
+    def weights_init(self,s,z):
+        self.s.data.fill_(s)
+        self.sz.data.fill_(z)
+        if self.amplitude is not None:
+            self.amplitude.data.fill_(1.)
 
     def get_filter(self, s=None, sz=None, amplitude=None):
         """
