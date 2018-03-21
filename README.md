@@ -23,6 +23,7 @@ We propose DoGNet, a neural architecture, that closes the gap between classical 
 ## Installation/Uninstall/Run
 * python setup.py install --user
 * pip uninstall dognet
+* /run/run_prism.py or any other. results will be saved as csv to results folder
 * using jupyter run any notebook from notebooks folder
 
 ## Acknowledgements
