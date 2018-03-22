@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from dogs import DoG2DIsotropic, DoG2DAnisotropic, DoG3DIsotropic
+from .dogs import DoG2DIsotropic, DoG2DAnisotropic, DoG3DIsotropic
 
 class Simple3DNetwork(nn.Module):
     def __init__(self, in_channels, filter_size=9, k=4,depth = 3, return_intermediate=False, learn_amplitude=False,

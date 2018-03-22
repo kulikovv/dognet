@@ -1,6 +1,6 @@
-from probabilistic import probabilistic_synapse_segmentation
+from .probabilistic import probabilistic_synapse_segmentation
 
-from convnets import (
+from .convnets import (
     Unet,
     FCN
 )

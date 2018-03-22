@@ -1,3 +1,5 @@
+from __future__ import division
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,14 +11,14 @@ class Gaussian2DBase(nn.Module):
     def __init__(self, w, n_gaussian):
         super(Gaussian2DBase, self).__init__()
         assert 1 == w % 2, "'w' must be even 3,5,7,9,11 etc."
-        self.xes = torch.FloatTensor(range(-w / 2 + 1, w / 2 + 1)).unsqueeze(-1)
+        self.xes = torch.FloatTensor(range(int(-w / 2),  int(w / 2) + 1)).unsqueeze(-1)
         self.xes = self.xes.repeat(self.xes.size(0), 1, n_gaussian)
         self.yes = self.xes.transpose(1, 0)
 
         self.xypod = Parameter(self.xes * self.yes, requires_grad=False)
         self.xes = Parameter(self.xes ** 2, requires_grad=False)
         self.yes = Parameter(self.yes ** 2, requires_grad=False)
-        self.padding = w / 2
+        self.padding = int(w / 2)
 
 
 class Gaussian3DBase(nn.Module):
@@ -25,10 +27,10 @@ class Gaussian3DBase(nn.Module):
         assert 1 == w % 2, "'w' must be even 3,5,7,9,11 etc."
         assert 1 == depth % 2, "'depth' must be even 3,5,7,9,11 etc."
 
-        self.xes = torch.FloatTensor(range(-w / 2 + 1, w / 2 + 1)).unsqueeze(-1) ** 2
+        self.xes = torch.FloatTensor(range(int(-w / 2),  int(w / 2) + 1)).unsqueeze(-1) ** 2
         self.xes = self.xes.repeat(depth, self.xes.size(0), 1, n_gaussian)
         self.yes = self.xes.transpose(1, 2)
-        self.zes = torch.FloatTensor(range(-depth / 2 + 1, depth / 2 + 1)).unsqueeze(-1).unsqueeze(-1).unsqueeze(
+        self.zes = torch.FloatTensor(range(int(-depth / 2),  int(depth / 2) + 1)).unsqueeze(-1).unsqueeze(-1).unsqueeze(
             -1) ** 2
 
         self.xes = Parameter(self.xes, requires_grad=False)

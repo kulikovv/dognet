@@ -10,6 +10,7 @@ class Prism:
                  req_channels=['synapsin-1', 'PSD-95', 'bassoon', 'VGLUT1', 'SHANK3', 'Homer-1b/c']):
         full = np.load(path)
         self.channel_names = full['channel_names'].tolist()
+        print(self.channel_names)
         req_indexes = [self.channel_names.index(c) for c in req_channels]
         self.data = full['data'][:, req_indexes, :, :]
 

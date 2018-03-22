@@ -1,3 +1,4 @@
+from __future__ import division
 import sys
 sys.path.insert(0, '..')
 
@@ -96,7 +97,7 @@ print(estimate_quality(collman,net,b,slices=range(8,25)))
 
 
 name = 'collman'
-req_channels=['collman15v2_Synapsin647', 'collman15v2_VGluT1_647', 'collman15v2_PSD95_488']
+req_channels=[b'collman15v2_Synapsin647', b'collman15v2_VGluT1_647', b'collman15v2_PSD95_488']
 dm=[]
 print("Proccessing Collman15 dataset")
 for silce in range(2,25):

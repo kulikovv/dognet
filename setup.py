@@ -9,14 +9,15 @@ setuptools.setup(
         "sklearn",
         "matplotlib",
         "scipy",
-        "matplotlib_scalebar",
         "torch"
     ],
     packages=setuptools.find_packages(
         exclude=[
             "notebooks",
 	    "images",
-	    "datasets"
+	    "datasets",
+		"results",
+		"run"
         ]
     ),
     license="GNU v3",

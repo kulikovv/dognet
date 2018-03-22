@@ -1,4 +1,10 @@
-from utils import (
+from .gaussians import (
+    Gaussian2DIsotropic,
+    Gaussian2DAnisotropic,
+    Gaussian3DIsotropic
+)
+
+from .utils import (
     extract_descriptor,
     find_peaks,
     draw_descriptors,
@@ -8,19 +14,13 @@ from utils import (
     get_gaussian
 )
 
-from gaussians import (
-    Gaussian2DIsotropic,
-    Gaussian2DAnisotropic,
-    Gaussian3DIsotropic
-)
-
-from dogs import (
+from .dogs import (
     DoG2DIsotropic,
     DoG2DAnisotropic,
     DoG3DIsotropic
 )
 
-from networks import (
+from .networks import (
     SimpleIsotropic,
     SimpleAnisotropic,
     SimpleNetwork,
@@ -29,11 +29,11 @@ from networks import (
     DeepAnisotropic
 )
 
-from training import (
+from .training import (
     train_routine,
     create_generator,
     create_generator_3d
 )
 
-import baselines
-import data
+from .baselines import *
+from .data import *

@@ -2,9 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 from torch.nn.parameter import Parameter
 
-from gaussians import Gaussian2DAnisotropic,Gaussian2DIsotropic,Gaussian3DIsotropic
+from .gaussians import Gaussian2DAnisotropic,Gaussian2DIsotropic,Gaussian3DIsotropic
 
 
 class DoG2DIsotropic(nn.Module):
@@ -52,7 +53,7 @@ class DoG3DIsotropic(nn.Module):
     def forward(self, x):
         filters = self.A.get_filter() - self.B.get_filter()
         filters = filters.transpose(2,4).transpose(3,4).contiguous()
-        return F.conv3d(x, filters, padding=(0,self.w/2,self.w/2), groups=x.size(1))
+        return F.conv3d(x, filters, padding=(0,int(self.w/2),int(self.w/2)), groups=x.size(1))
 
 """
 class Laplasian(nn.Module):

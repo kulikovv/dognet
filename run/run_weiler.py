@@ -1,3 +1,5 @@
+from __future__ import division
+
 import sys
 sys.path.insert(0, '..')
 
@@ -85,7 +87,7 @@ new_weiler = np.stack(new_weiler)
 
 print("processing weiler14 dataset")
 name = 'weiler'
-req_channels=['Ex3R43C2_Synapsin1_3', 'Ex3R43C2_vGluT1_2', 'Ex3R43C2_PSD95_2']
+req_channels=[b'Ex3R43C2_Synapsin1_3', b'Ex3R43C2_vGluT1_2', b'Ex3R43C2_PSD95_2']
 dm=[]
 for silce in range(2,8):
     x = new_weiler[:,silce-2:silce+2].mean(axis=1).astype(np.float32)

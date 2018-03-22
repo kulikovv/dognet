@@ -116,7 +116,7 @@ def train_routine(detector,
         vx, vy = Variable(torch.from_numpy(x).float()), \
                  Variable(torch.from_numpy(y).float(), requires_grad=False)
 
-        if use_gpu:
+        if torch.cuda.is_available():
             vx = vx.cuda()
             vy = vy.cuda()
 

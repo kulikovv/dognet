@@ -1,10 +1,8 @@
+from __future__ import division
 import sys
 sys.path.insert(0, '..')
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from matplotlib.patches import Rectangle,Ellipse
 
 import pandas as pd
 import dognet
@@ -12,10 +10,12 @@ import torch
 from torch.autograd import Variable
 import pandas as pd
 
-req_channels=['synapsin-1', 'PSD-95', 'VGLUT1','bassoon']
+
+req_channels=[b'synapsin-1', b'PSD-95', b'VGLUT1',b'bassoon']
+print(req_channels)
 rep21 = dognet.data.Prism("../datasets/prism17/rep2-1/Rep2-1.npz",req_channels=req_channels)
 rep31 = dognet.data.Prism("../datasets/prism17/rep3-1/Rep3-1.npz",req_channels=req_channels)
-rep31_map = dognet.data.Prism("../datasets/prism17/rep3-1/Rep3-1.npz",req_channels=['MAP2'])
+rep31_map = dognet.data.Prism("../datasets/prism17/rep3-1/Rep3-1.npz",req_channels=[b'MAP2'])
 
 #train
 rep21_anno = rep21.get_annotations("../datasets/prism17/rep2-1/annotation_data_mbs_final.r2-1.mat")\
@@ -50,15 +50,6 @@ def inference(net,image,get_intermediate=False):
     if get_intermediate:
         return res.data.cpu().numpy(),inter.data.cpu().numpy()
     return res.data.cpu().numpy()
-
-def draw_proccessed(x,image):
-    y = inference(net,normalize(x,get_normparams(rep21.data)))
-    
-    fig,ax = plt.subplots(1,1,figsize=(10,10))
-   
-    plt.setp(ax, xticks=[], yticks=[])
-    plt.imshow(image,cmap='gray',interpolation='bilinear')
-    return ax,y
 
 def estimate(net,test_set):
     mf1=[]
