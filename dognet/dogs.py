@@ -20,7 +20,9 @@ class DoG2DIsotropic(nn.Module):
 
     def forward(self, x):
         filters = self.A.get_filter() - self.B.get_filter()
-        return F.conv2d(x, filters, padding=self.A.padding, groups=x.size(1))
+        r = F.conv2d(x, filters[:,:,self.A.padding:self.A.padding+1,:].contiguous(), padding=(0,self.A.padding), groups=x.size(1))+F.conv2d(x, filters[:,:,:,self.A.padding:self.A.padding+1].contiguous(), padding=(self.A.padding,0), groups=x.size(1))
+        return r
+        #return F.conv2d(x, filters, padding=self.A.padding, groups=x.size(1))
 
 
 class DoG2DAnisotropic(nn.Module):
