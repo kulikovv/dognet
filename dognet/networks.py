@@ -90,7 +90,7 @@ class DeepNetwork(nn.Module):
         layer = []
         for i in range(n_layers):
             layer.append(dog_class(filter_size, in_channels * k, learn_amplitude=learn_amplitude))
-            layer.append(nn.Conv2d(in_channels * k, in_channels*k/2, 1))
+            layer.append(nn.Conv2d(in_channels * k, in_channels*int(k/2), 1))
             layer.append(nn.ReLU())
 
         self.net = nn.Sequential(*layer[:-2])

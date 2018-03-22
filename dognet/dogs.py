@@ -28,7 +28,7 @@ class DoG2DIsotropic(nn.Module):
 class DoG2DAnisotropic(nn.Module):
     def __init__(self, w, n_gaussian, learn_amplitude=True):
         super(DoG2DAnisotropic, self).__init__()
-        self.theta = Parameter(torch.randn(n_gaussian).float().cuda(), requires_grad=True)
+        self.theta = Parameter(torch.randn(n_gaussian).float(), requires_grad=True)
         self.A = Gaussian2DAnisotropic(w, n_gaussian, th=self.theta,learn_amplitude=learn_amplitude)
         self.B = Gaussian2DAnisotropic(w, n_gaussian, th=self.theta,learn_amplitude=learn_amplitude)
 
