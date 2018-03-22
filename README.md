@@ -13,7 +13,6 @@ We propose DoGNet, a neural architecture, that closes the gap between classical 
 * Scikit-image
 * Sklearn
 * Matplotlib
-* Matplotlib_scalebar
 
 ## GPU or CPU
 * For inference GPU is not required (you can our pretrained models without GPU)
