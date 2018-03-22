@@ -26,5 +26,10 @@ We propose DoGNet, a neural architecture, that closes the gap between classical 
 * /run/run_prism.py or any other. results will be saved as csv to results folder
 * using jupyter run any notebook from notebooks folder
 
+## Installation on Windows
+* install pytorch https://github.com/peterjc123/pytorch-scripts
+* python setup.py install --user
+* /run/run_prism.py or any other. results will be saved as csv to results folder
+
 ## Acknowledgements
 This work is supported by Skoltech NGP Program (Skoltech-MIT joint project)
