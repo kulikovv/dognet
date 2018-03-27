@@ -9,6 +9,7 @@ import dognet
 import torch
 from torch.autograd import Variable
 import pandas as pd
+from skimage.io import imsave
 
 
 req_channels=[b'synapsin-1', b'PSD-95', b'VGLUT1',b'bassoon']
@@ -90,8 +91,21 @@ for rep,name in zip([rep21,rep31],['rep21','rep31']):
         x = rep.data[fov]
         y = inference(net,normalize(x,get_normparams(rep21.data))) 
         xx,yy,_ = dognet.find_peaks(y[0,0],3)
-        for c in range(len(req_channels)):
-            
+        imsave("../results/prism_prob_"+name+"_"+str(fov)+".png",y[0,0])
+        pic = x[:3].transpose(1,2,0)
+        pic = np.copy(pic)
+        for x,y in zip(xx,yy):
+            x = int(x)
+            y = int(y)
+            pic[x-1:x+2,y,0]=32000
+            pic[x-1:x+2,y,1]=32000
+            pic[x-1:x+2,y,2]=0
+            pic[x,y-1:y+2,0]=32000
+            pic[x,y-1:y+2,1]=32000
+            pic[x,y-1:y+2,2]=0
+        imsave("../results/prism_loc_"+name+"_"+str(fov)+".png",pic)
+        
+        for c in range(len(req_channels)):          
             desc = dognet.extract_descriptor(x[c],xx,yy,5)
             dm+=[[fov,req_channels[c]]+d for d in desc]
     dm = np.array(dm)            

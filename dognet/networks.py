@@ -101,8 +101,8 @@ class DeepNetwork(nn.Module):
             if isinstance(m, nn.Conv2d):
                 m.weight.data.fill_(1.)
                 m.bias.data.fill_(0.)
-            elif isinstance(m, DoG2DIsotropic) or isinstance(m, DoG2DAnisotropic):
-                m.weights_init()
+            #elif isinstance(m, DoG2DIsotropic) or isinstance(m, DoG2DAnisotropic):
+            #    m.weights_init()
 
     def forward(self, x):
         x = self.net(x)

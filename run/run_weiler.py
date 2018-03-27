@@ -16,6 +16,8 @@ import torch
 from torch.autograd import Variable
 from skimage.draw import circle
 import pandas as pd
+from skimage.io import imsave
+
 
 collman = np.load('../datasets/collman15/collman_small.npy')
 
@@ -86,15 +88,31 @@ for i in range(3):
 new_weiler = np.stack(new_weiler)
 
 print("processing weiler14 dataset")
+
 name = 'weiler'
-req_channels=[b'Ex3R43C2_Synapsin1_3', b'Ex3R43C2_vGluT1_2', b'Ex3R43C2_PSD95_2']
+req_channels=['Ex3R43C2_Synapsin1_3', 'Ex3R43C2_vGluT1_2', 'Ex3R43C2_PSD95_2']
 dm=[]
-for silce in range(2,8):
+for silce in range(1,2):
     x = new_weiler[:,silce-2:silce+2].mean(axis=1).astype(np.float32)
     y  = inference(net,x)
-   
     xx,yy,_ = dognet.find_peaks(y[0,0],3)
     
+    imsave("../results/weiler_prob_"+str(silce)+".png",y[0,0])
+    pic = x[:3].transpose(1,2,0)
+    
+    pic = np.copy(pic)
+    pic[pic>0.5]=0.5
+    pic = (pic-np.min(pic,(0,1)))/(np.max(pic,(0,1))-np.min(pic,(0,1))).astype(np.float)
+    for x,y in zip(xx,yy):
+        x = int(x)
+        y = int(y)
+        pic[x-1:x+2,y,0]=1
+        pic[x-1:x+2,y,1]=1
+        pic[x-1:x+2,y,2]=0
+        pic[x,y-1:y+2,0]=1
+        pic[x,y-1:y+2,1]=1
+        pic[x,y-1:y+2,2]=0
+    imsave("../results/weiler_loc_"+str(silce)+".png",pic)
     for c in range(len(req_channels)):    
             desc = dognet.extract_descriptor(weiler[c,silce-2:silce+2].mean(axis=0),xx,yy,3)   
             dm+=[[silce,req_channels[c]]+d for d in desc]
@@ -104,5 +122,4 @@ d = {'fov': dm[:,0] , 'marker': dm[:,1],'x': dm[:,2] ,'y': dm[:,3] ,'A': dm[:,4]
      ,'L2': dm[:,6] ,'sigmax2': dm[:,7],'sigmay2': dm[:,8],'sigmaxy': dm[:,9],'angle': dm[:,10],
      'x_dog': dm[:,11],'y_dog': dm[:,12]}
 df = pd.DataFrame(data=d)
-df.to_csv("../results/weiler_descriptors.csv")
-
+df.to_csv(name+".csv")
