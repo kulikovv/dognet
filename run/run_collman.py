@@ -16,6 +16,8 @@ import pandas as pd
 import torch
 from torch.autograd import Variable
 
+net =dognet.DeepIsotropic(3,11,4,3,learn_amplitude=False)
+
 def load_annotation(path,scale,synapses_indexes=None):
     anno = np.load(path)['collman15v2_annotation']
     layer = []
@@ -82,7 +84,7 @@ def estimate_quality(collman,net,layer,slices=[2,3,4,5,6],th=0.5):
         mf1_score.append(f1_score)
     return np.mean(mf1_score),np.mean(mprecision),np.mean(mrecall)
 
-net =dognet.DeepIsotropic(3,11,4,3,learn_amplitude=False)
+
 #net = dognet.SimpleAnisotropic(3,11,3,return_intermediate=True)
 #net.weights_init()
 if torch.cuda.is_available():
