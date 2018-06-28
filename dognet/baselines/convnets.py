@@ -31,9 +31,9 @@ class U_net(nn.Module):
         x = torch.cat([x, g], dim=1)
         return F.sigmoid(self.conv5(x)),None
     
-class Basic(nn.Module):
+class Direct(nn.Module):
     def __init__(self, in_dims, k=1):
-        super(Basic, self).__init__()
+        super(Direct, self).__init__()
         self.conv1 = nn.Conv2d(in_dims, k, 11, padding=5,groups=in_dims)
         self.relu =  nn.ReLU()
         self.conv2 = nn.Conv2d(k, 1, 1, padding=0)

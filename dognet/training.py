@@ -124,7 +124,7 @@ def train_routine(detector,
         optimizer.zero_grad()
         l = loss(p[:, :, margin:-margin, margin:-margin], vy[:, :, margin:-margin, margin:-margin])
 
-        errors.append(l.data.select(0, 0))
+        errors.append(l.item())
         l.backward()
         optimizer.step()
 

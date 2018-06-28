@@ -88,7 +88,7 @@ class Gaussian2DIsotropic(Gaussian2DBase):
     def forward(self, x):
         filters = self.get_filter(self.s, self.amplitude)
         #return F.conv2d(x, filters, padding=self.padding, groups=x.size(1))
-        r = F.conv2d(x, filters[:,:,self.padding:self.padding+1,:].contiguous(), padding=(0,self.padding), groups=x.size(1))+F.conv2d(x, filters[:,:,:,self.padding:self.padding+1].contiguous(), padding=(self.padding,0), groups=x.size(1))
+        r = (F.conv2d(x, torch.sum(torch.sum(filters, dim=2,keepdim=True).contiguous(), padding=(0,self.padding),groups=x.size(1)))+F.conv2d(x,torch.sum(filters, dim=3,keepdim=True).contiguous(), padding=(self.padding,0), groups=x.size(1)))/2.
         return r
 
     def __check__(self, var):
