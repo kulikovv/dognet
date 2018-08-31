@@ -21,6 +21,7 @@ def fg_prob(im):
 
 def convolve(im, size):
     prim = np.ones((size, size))
+    im[im==0]=0.01
     log_image = np.log(im)
 
     for i in range(im.shape[0]):

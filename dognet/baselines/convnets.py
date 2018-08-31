@@ -20,6 +20,9 @@ class U_net(nn.Module):
             if isinstance(m, torch.nn.Conv2d):
                 m.weight.data.normal_(0., 2.)
                 
+    def get_reg_params(self):
+        return self.parameters()
+                
     def forward(self,x):
         x = self.relu(self.conv1(x))
         g = self.relu(self.conv2(self.pool(x)))
@@ -45,6 +48,9 @@ class Direct(nn.Module):
         x = self.relu(self.conv1(x))
         return F.sigmoid(self.conv2(x)),None
     
+    def get_reg_params(self):
+        return self.parameters()
+    
 
 class FCN(nn.Module):
     """
@@ -68,6 +74,9 @@ class FCN(nn.Module):
         for m in self.modules():
             if isinstance(m, torch.nn.Conv2d):
                 m.weight.data.normal_(0., 2.)
+                
+    def get_reg_params(self):
+        return self.parameters()
                 
     def forward(self, x):
         x = self.begin(x)

@@ -17,7 +17,8 @@ from .utils import (
 from .dogs import (
     DoG2DIsotropic,
     DoG2DAnisotropic,
-    DoG3DIsotropic
+    DoG3DIsotropic,
+    Lap2D
 )
 
 from .networks import (

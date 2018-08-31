@@ -83,15 +83,66 @@ def print_percent(percent):
     sys.stdout.write("[%-20s] %d%%" % ('=' * percent, 5 * percent))
     sys.stdout.flush()
 
+    
+def soft_dice_loss(y_pred, y_true, epsilon=1e-6):
+    ''' 
+    Soft dice loss calculation for arbitrary batch size, number of classes, and number of spatial dimensions.
+    Assumes the `channels_last` format.
+
+    # Arguments
+        y_pred: b x N x X x Y Network output, must sum to 1 over c channel (such as after softmax) 
+        y_true: b x N x X x Y  One hot encoding of ground truth       
+        epsilon: Used for numerical stability to avoid divide by zero errors
+
+    # References
+        V-Net: Fully Convolutional Neural Networks for Volumetric Medical Image Segmentation 
+        https://arxiv.org/abs/1606.04797
+        More details on Dice loss formulation 
+        https://mediatum.ub.tum.de/doc/1395260/1395260.pdf (page 72)
+
+        Adapted from https://github.com/Lasagne/Recipes/issues/99#issuecomment-347775022
+    '''
+
+    # skip the batch and class axis for calculating Dice score
+
+    numerator = 2. * torch.sum(y_pred * y_true)
+    denominator = torch.sum(y_pred.pow(2) + y_true)
+    
+    return 1 - torch.mean(numerator / (denominator + epsilon))  # average over classes and batch
+
+def create_weight(pos_weight):
+    def weighted_binary_cross_entropy(sigmoid_x, targets, size_average=True, reduce=True):
+        """
+        Args:
+            sigmoid_x: predicted probability of size [N,C], N sample and C Class. Eg. Must be in range of [0,1], i.e. Output from Sigmoid.
+            targets: true value, one-hot-like vector of size [N,C]
+            pos_weight: Weight for postive sample
+        """
+        if not (targets.size() == sigmoid_x.size()):
+            raise ValueError("Target size ({}) must be the same as input size ({})".format(targets.size(), sigmoid_x.size()))
+
+        loss = -  pos_weight*targets * sigmoid_x.log() - (1-targets)*(1-sigmoid_x).log()
+
+
+
+        if not reduce:
+            return loss
+        elif size_average:
+            return loss.mean()
+        else:
+            return loss.sum()
+    return weighted_binary_cross_entropy
 
 def train_routine(detector,
                   generator,
                   n_iter=5000,
-                  loss=nn.BCELoss(),
+                  loss="bce",
                   lr=0.01,
                   margin=10,
                   decay_schedule=(3000, 0.1),
-                  use_gpu=True,verbose=True):
+                  optimizer=None,
+                  regk=0.,
+                  verbose=True):
     """
     Train a detector with respect to the data from generator
     :param detector: A detector network
@@ -106,23 +157,41 @@ def train_routine(detector,
     """
     
     detector.train()
-    optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, detector.parameters()), lr=lr)
+    if optimizer is None:
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, detector.parameters()), lr=lr)
+     
+    device = detector.parameters().next().device
+    
+    _, y = generator()
+    ky = torch.FloatTensor([(y.shape[-1]*y.shape[-2]-y.sum()/y.shape[0])/y[0,0].sum()*y.shape[0]]).to(device)
+    
+    floss = soft_dice_loss
+    if loss=="bce":
+        floss = nn.BCELoss()
+    elif loss=="softdice":
+        floss = soft_dice_loss
+    elif loss=="weightbce":
+        floss = create_weight(ky)
+    if verbose:
+        print(ky,y.shape,y.shape[-1]*y.shape[-2],y[0,0].sum(),y[0,0].max())
+        print(floss) 
+    
+        
+    
+    #optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, detector.parameters()), lr=lr)
     errors = []
     if verbose:
         print("Training started!")
     percent_old = 0
     for i in range(n_iter):
         x, y = generator()
-        vx, vy = Variable(torch.from_numpy(x).float()), \
-                 Variable(torch.from_numpy(y).float(), requires_grad=False)
+        vx, vy = torch.from_numpy(x).float().to(device), \
+                 torch.from_numpy(y).float().to(device)
 
-        if torch.cuda.is_available():
-            vx = vx.cuda()
-            vy = vy.cuda()
 
         p, _ = detector(vx)
         optimizer.zero_grad()
-        l = loss(p[:, :, margin:-margin, margin:-margin], vy[:, :, margin:-margin, margin:-margin])
+        l = floss(p[:, :, margin:-margin, margin:-margin], vy[:, :, margin:-margin, margin:-margin])+regk*torch.sum(torch.pow(detector.get_reg_params().next(),2))
 
         errors.append(l.item())
         l.backward()

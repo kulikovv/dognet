@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+import torch
 
 from .dogs import DoG2DIsotropic, DoG2DAnisotropic, DoG3DIsotropic
 
@@ -16,7 +17,7 @@ class Simple3DNetwork(nn.Module):
         :param dog_class: the class of Difference of Gaussian used
         """
         super(Simple3DNetwork, self).__init__()
-        self.conv1 = dog_class(filter_size, in_channels * k, depth , learn_amplitude=learn_amplitude)
+        self.conv1 = dog_class(filter_size, in_channels, k, depth , learn_amplitude=learn_amplitude)
         self.conv2 = nn.Conv2d(in_channels * k, 1, 1)
         self.return_intermediate = return_intermediate
         
@@ -32,6 +33,9 @@ class Simple3DNetwork(nn.Module):
             return F.sigmoid(x), y
         return F.sigmoid(x), None
     
+    def get_reg_params(self):
+        return self.conv2.parameters()
+    
 
 class SimpleNetwork(nn.Module):
     def __init__(self, in_channels, filter_size=9, k=4, return_intermediate=False, learn_amplitude=False,
@@ -45,22 +49,33 @@ class SimpleNetwork(nn.Module):
         :param dog_class: the class of Difference of Gaussian used
         """
         super(SimpleNetwork, self).__init__()
-        self.conv1 = dog_class(filter_size, in_channels * k, learn_amplitude=learn_amplitude)
-        self.conv2 = nn.Conv2d(in_channels * k, 1, 1)
+        #
+        # self.conv1 =dognet.DoG2DIsotropic(15,in_channels,2)
+        # self.conv2 = nn.Conv2d(in_channels*2, 2, kernel_size=(1,1))
+        self.conv1 = dog_class(filter_size, in_channels,k, learn_amplitude=learn_amplitude)
+        self.conv2 = nn.Conv2d(in_channels*k, 2, kernel_size=(1,1))
+        self.conv3 = nn.Conv2d(2, 1, kernel_size=(1,1),bias=None)
+        
         self.return_intermediate = return_intermediate
         
     def weights_init(self):
         self.conv1.weights_init()
         self.conv2.weight.data.fill_(1.)
+        self.conv3.weight.data.fill_(1.)
         self.conv2.bias.data.fill_(0.)
  
     def forward(self, x):
         y = self.conv1(x)
         #y = F.sigmoid(x)
-        x = self.conv2(y)
+        xx = F.sigmoid(self.conv2(y))
+        xxx = xx[:,0:1].mul(xx[:,1:])
+        #xxx=torch.exp(self.conv3(torch.log(xx)))
         if self.return_intermediate:
-            return F.sigmoid(x), y
-        return F.sigmoid(x), None
+            return xxx, y
+        return xxx, None
+    
+    def get_reg_params(self):
+        return self.conv2.parameters()
 
 
 class SimpleIsotropic(SimpleNetwork):
@@ -88,10 +103,12 @@ class DeepNetwork(nn.Module):
         super(DeepNetwork, self).__init__()
         
         layer = []
+
         for i in range(n_layers):
-            layer.append(dog_class(filter_size, in_channels * k, learn_amplitude=learn_amplitude))
-            layer.append(nn.Conv2d(in_channels * k, in_channels*int(k/2), 1))
+            layer.append(dog_class(filter_size, in_channels,k, learn_amplitude=learn_amplitude))
+            layer.append(nn.Conv2d(in_channels*k, in_channels, 1))
             layer.append(nn.ReLU())
+          
 
         self.net = nn.Sequential(*layer[:-2])
         self.final_convolution = nn.Conv2d(in_channels*k, 1, 1)
@@ -101,13 +118,16 @@ class DeepNetwork(nn.Module):
             if isinstance(m, nn.Conv2d):
                 m.weight.data.fill_(1.)
                 m.bias.data.fill_(0.)
-            #elif isinstance(m, DoG2DIsotropic) or isinstance(m, DoG2DAnisotropic):
-            #    m.weights_init()
+            elif isinstance(m, DoG2DIsotropic) or isinstance(m, DoG2DAnisotropic):
+                m.weights_init()
 
     def forward(self, x):
         x = self.net(x)
         x = self.final_convolution(x)
         return F.sigmoid(x), None
+    
+    def get_reg_params(self):
+        return self.final_convolution.parameters()
 
 
 class DeepIsotropic(DeepNetwork):
