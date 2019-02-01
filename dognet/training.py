@@ -163,7 +163,10 @@ def train_routine(detector,
     device = detector.parameters().next().device
     
     _, y = generator()
-    ky = torch.FloatTensor([(y.shape[-1]*y.shape[-2]-y.sum()/y.shape[0])/y[0,0].sum()*y.shape[0]]).to(device)
+    sumy = y[0,0].sum()
+    if 0==sumy:
+        sumy=1
+    ky = torch.FloatTensor([(y.shape[-1]*y.shape[-2]-y.sum()/y.shape[0])/sumy*y.shape[0]]).to(device)
     
     floss = soft_dice_loss
     if loss=="bce":
